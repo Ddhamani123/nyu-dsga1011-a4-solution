@@ -45,7 +45,16 @@ def do_train(args, model, train_dataloader, save_dir="./out"):
     # You can use progress_bar.update(1) to see the progress during training
     # You can refer to the pytorch tutorial covered in class for reference
 
-    raise NotImplementedError
+    for epoch in range(num_epochs):
+        for batch in train_dataloader:
+            batch = {k: v.to(device) for k, v in batch.items()}
+            outputs = model(**batch)
+            loss = outputs.loss
+            loss.backward()
+            optimizer.step()
+            lr_scheduler.step()
+            optimizer.zero_grad()
+            progress_bar.update(1)
 
     ##### YOUR CODE ENDS HERE ######
 
@@ -93,8 +102,23 @@ def create_augmented_dataloader(args, dataset):
     # dataloader will be for the original training split augmented with 5k random transformed examples from the training set.
     # You may find it helpful to see how the dataloader was created at other place in this code.
 
-    raise NotImplementedError
+    # 1. pick 5000 random training reviews
+    sample = dataset["train"].shuffle(seed=42).select(range(5000))
 
+    #2. add typos to them
+    transformed = sample.map(custom_transform, load_from_cache_file=False)
+
+    # 3. join the originals and the typo copies
+    augmented = datasets.concatenate_datasets([dataset["train"], transformed])
+
+    # 4. tokensize and clean up (the same way as for the test set)
+    augmented = augmented.map(tokenize_function, batched=True, load_from_cache_file=False)
+
+    augmented = augmented.remove_columns(["text"])
+    augmented = augmented.rename_column("label", "labels")
+    augmented.set_format("torch")
+
+    train_dataloader = DataLoader(augmented, shuffle=True, batch_size=args.batch_size)
     ##### YOUR CODE ENDS HERE ######
 
     return train_dataloader

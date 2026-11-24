@@ -34,6 +34,16 @@ def example_transform(example):
 # You can randomly select each word with some fixed probability to replace by a synonym.
 
 
+# QWERTY keys that touch each letter (same row and the rows above/below)
+NEIGHBORS = {
+    "a": "qwsz",   "b": "vghn",   "c": "xdfv",   "d": "serfcx", "e": "wsdr",
+    "f": "drtgvc", "g": "ftyhbv", "h": "gyujnb", "i": "ujko",   "j": "huikmn",
+    "k": "jiolm",  "l": "kop",    "m": "njk",    "n": "bhjm",   "o": "iklp",
+    "p": "ol",     "q": "wa",     "r": "edft",   "s": "awedxz", "t": "rfgy",
+    "u": "yhji",   "v": "cfgb",   "w": "qase",   "x": "zsdc",   "y": "tghu",
+    "z": "asx",
+}
+
 def custom_transform(example):
     ################################
     ##### YOUR CODE BEGINGS HERE ###
@@ -44,7 +54,17 @@ def custom_transform(example):
 
     # You should update example["text"] using your transformation
 
-    raise NotImplementedError
+    words = word_tokenize(example["text"])
+    new_words = []
+    for word in words:
+        if word.isalpha() and word != "br" and random.random() < 0.3:
+            i = random.randrange(len(word))
+            letter = word[i].lower()
+            if letter in NEIGHBORS:
+                new_letter = random.choice(NEIGHBORS[letter])
+                word = word[:i] + new_letter + word[i+1:]
+        new_words.append(word)
+    example["text"] = TreebankWordDetokenizer().detokenize(new_words)
 
     ##### YOUR CODE ENDS HERE ######
 
